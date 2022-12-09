@@ -1,4 +1,4 @@
-# Media Player Lights Sync
+# Async Media Player Lights Sync
 
 _AppDaemon App that synchronizes the color of RGB lights with the thumbnail of a media player in Home Assistant._
 
