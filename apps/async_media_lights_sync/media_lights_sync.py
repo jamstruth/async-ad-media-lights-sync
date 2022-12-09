@@ -55,7 +55,8 @@ class AsyncMediaLightsSync(Hass):
         self.listen_state(self.condition_changed, condition["entity"], attribute="state")
 
     def condition_changed(self, entity, attribute, old, new, kwargs):
-        self.log("Condition updated!")
+        self.log("Condition updated from {old} to {new}".format(old=old, new=new))
+        self.log("Looking for {condition}".format(condition=self.condition["state"]))
         # Check if we have changed from our old condition
         if self.condition["state"] == old:
             # Cancel all of our media player tracking
