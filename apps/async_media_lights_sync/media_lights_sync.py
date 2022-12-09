@@ -47,8 +47,9 @@ class AsyncMediaLightsSync(Hass):
         # If we don't have a condition we can skip straight to tracking the media player
         if self.condition is None:
             self.track_media_players(self.media_players)
-        # Otherwise we want to track the condition, so we can cancel out quickly
-        self.track_condition(self.condition)
+        else:
+            # Otherwise we want to track the condition, so we can cancel out quickly
+            self.track_condition(self.condition)
 
     def track_condition(self, condition):
         self.log("Listening for changes to condition {entity}".format(entity=condition["entity"]))
@@ -81,7 +82,7 @@ class AsyncMediaLightsSync(Hass):
 
     def change_lights_color(self, entity, attribute, old_url, new_url, kwargs):
         """Callback when a entity_picture has changed."""
-        if new_url == old_url or not self.can_change_colors():
+        if new_url == old_url:
             return
 
         if new_url is not None:
@@ -106,10 +107,6 @@ class AsyncMediaLightsSync(Hass):
                 self.set_light("on", self.lights[i], color=color, brightness=self.brightness, transition=self.transition)
         else:
             self.reset_lights()
-
-    def can_change_colors(self):
-        """Validate that light should be sync if a condition is set."""
-        return self.condition is None or self.get_state(self.condition["entity"]) == self.condition["state"]
 
     def store_initial_lights_states(self):
         """Save the initial state of all lights if not already done."""
