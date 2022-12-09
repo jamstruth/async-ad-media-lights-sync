@@ -4,7 +4,7 @@ import contextlib
 import os
 
 from appdaemontestframework import automation_fixture
-from apps.media_lights_sync.media_lights_sync import MediaLightsSync, PICTURE_ATTRIBUTES
+from apps.async_media_lights_sync.media_lights_sync import MediaLightsSync, PICTURE_ATTRIBUTES
 from PIL import Image
 
 test_light_1_base_state = {'brightness': 50, 'rgb_color': [123, 123, 123]}
