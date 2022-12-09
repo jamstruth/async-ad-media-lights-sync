@@ -1,5 +1,6 @@
 """Synchronize RGB lights with media player thumbnail"""
-import appdaemon.plugins.hass.hassapi as hass
+from appdaemon.plugins.hass.hassapi import Hass
+from appdaemon.appdaemon import AppDaemon
 import sys
 import io
 import colorsys
@@ -20,12 +21,12 @@ COLOR_MODES = {
 }
 
 
-class MediaLightsSync(hass.Hass):
+class MediaLightsSync(Hass):
     """MediaLightsSync class."""
 
-    def initialize(self):
-        """Initialize the app and listen for media_player photo_attribute changes."""
-        args = self.args
+    def __init__(self, ad: AppDaemon, name, logging, args, config, app_config, global_vars):
+        super().__init__(ad, name, logging, args, config, app_config, global_vars)
+        self.is_synced = False
         self.lights = args["lights"]
         self.ha_url = args.get("ha_url", None)
         self.verify_cert = args.get("verify_cert", True)
@@ -35,15 +36,44 @@ class MediaLightsSync(hass.Hass):
         self.use_saturated_colors = args.get("use_saturated_colors", False)
         self.brightness = None if args.get("use_current_brightness", False) else 255
         self.quantization_method = self.get_quantization_method(args.get("quantization_method", None))
+        self.media_players = args["media_player"] if isinstance(args["media_player"], list) else [args["media_player"]]
+        self.media_player_listens = []
 
         self.media_player_callbacks = {}
         self.initial_lights_states = None
-        media_players = args["media_player"] if isinstance(args["media_player"], list) else [args["media_player"]]
 
+    def initialize(self):
+        """Initialize the app and listen for media_player photo_attribute changes."""
+        # If we don't have a condition we can skip straight to tracking the media player
+        if self.condition is None:
+            self.track_media_players(self.media_players)
+        # Otherwise we want to track the condition, so we can cancel out quickly
+        self.track_condition(self.condition)
+
+    def track_condition(self, condition):
+        self.log("Listening for changes to condition {entity}".format(entity=condition["entity"]))
+        self.listen_state(self.condition_changed, condition["entity"], attribute="state")
+
+    def condition_changed(self, entity, attribute, old, new, kwargs):
+        self.log("Condition updated!")
+        # Check if we have changed from our old condition
+        if self.condition["state"] == old:
+            # Cancel all of our media player tracking
+            for listen in self.media_player_listens:
+                self.cancel_listen_state(listen)
+        # Check if our condition is in place
+        if self.condition["state"] == new:
+            # Track the Media Players
+            self.media_player_listens = self.track_media_players(self, self.media_players)
+
+    def track_media_players(self, media_players):
+        media_player_listens = []
         for media_player in media_players:
             self.log("Listening for picture changes on '{entity}'".format(entity=media_player))
             for photo_attribute in PICTURE_ATTRIBUTES:
-                self.listen_state(self.change_lights_color, media_player, attribute=photo_attribute)
+                media_player_listens.append(self.listen_state(self.change_lights_color, media_player,
+                                                              attribute=photo_attribute))
+        return media_player_listens
 
     def change_lights_color(self, entity, attribute, old_url, new_url, kwargs):
         """Callback when a entity_picture has changed."""
