@@ -4,7 +4,7 @@ import contextlib
 import os
 
 from appdaemontestframework import automation_fixture
-from apps.async_media_lights_sync.media_lights_sync import MediaLightsSync, PICTURE_ATTRIBUTES
+from apps.async_media_lights_sync.media_lights_sync import AsyncMediaLightsSync, PICTURE_ATTRIBUTES
 from PIL import Image
 
 test_light_1_base_state = {'brightness': 50, 'rgb_color': [123, 123, 123]}
@@ -31,7 +31,7 @@ def hass_errors(hass_mocks):
 
 @pytest.fixture
 def media_lights_sync(given_that):
-    mls = MediaLightsSync(None, None, None, None, None, None, None)
+    mls = AsyncMediaLightsSync(None, None, None, None, None, None, None)
     given_that.passed_arg('media_player').is_set_to('media_player.tv_test')
     given_that.passed_arg('lights').is_set_to(['light.test_light_1', 'light.test_light_2'])
 

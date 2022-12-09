@@ -21,7 +21,7 @@ COLOR_MODES = {
 }
 
 
-class MediaLightsSync(Hass):
+class AsyncMediaLightsSync(Hass):
     """MediaLightsSync class."""
 
     def __init__(self, ad: AppDaemon, name, logging, args, config, app_config, global_vars):
