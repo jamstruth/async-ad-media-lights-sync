@@ -62,6 +62,8 @@ class AsyncMediaLightsSync(Hass):
             # Cancel all of our media player tracking
             for listen in self.media_player_listens:
                 self.cancel_listen_state(listen)
+            # Reset our light
+            self.reset_lights()
         # Check if our condition is in place
         if self.condition["state"] == new:
             # Track the Media Players
