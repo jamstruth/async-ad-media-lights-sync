@@ -46,7 +46,7 @@ Using the files from [./docker](./docker) in your CONF path, the Docker script w
 ```yaml
 media_lights_sync:
   module: async_media_lights_sync
-  class: MediaLightsSync
+  class: AsyncMediaLightsSync
   media_player: media_player.tv
   lights:
     - light.left_theatre_light

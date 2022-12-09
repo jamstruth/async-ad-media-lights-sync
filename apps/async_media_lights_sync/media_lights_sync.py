@@ -64,9 +64,10 @@ class AsyncMediaLightsSync(Hass):
         # Check if our condition is in place
         if self.condition["state"] == new:
             # Track the Media Players
-            self.media_player_listens = self.track_media_players(self, self.media_players)
+            self.media_player_listens = self.track_media_players(self.media_players)
 
     def track_media_players(self, media_players):
+        self.store_initial_lights_states()
         media_player_listens = []
         for media_player in media_players:
             self.log("Listening for picture changes on '{entity}'".format(entity=media_player))
@@ -81,7 +82,6 @@ class AsyncMediaLightsSync(Hass):
             return
 
         if new_url is not None:
-            self.store_initial_lights_states()
             log_message = "New picture received from '{entity}' ({attribute})\n"
             current_pictures = [self.get_state(entity, attribute=attribute) for attribute in PICTURE_ATTRIBUTES]
 
