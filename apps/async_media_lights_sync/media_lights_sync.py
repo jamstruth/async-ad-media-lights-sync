@@ -78,6 +78,7 @@ class AsyncMediaLightsSync(Hass):
             for photo_attribute in PICTURE_ATTRIBUTES:
                 media_player_listens.append(self.listen_state(self.handle_media_state_change, media_player,
                                                               attribute=photo_attribute))
+        self.perform_initial_light_change(self, media_players)
         return media_player_listens
 
     def handle_media_state_change(self, entity, attribute, old_url, new_url, kwargs):
