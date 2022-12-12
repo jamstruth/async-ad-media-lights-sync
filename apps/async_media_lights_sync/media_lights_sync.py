@@ -97,6 +97,7 @@ class AsyncMediaLightsSync(Hass):
                 if picture_value is not None or picture_value is not "":
                     # Set the light
                     self.change_light_colour(self, picture_value, media_player, photo_attribute)
+                    break
 
     def change_light_colour(self, picture_url, entity, attribute):
         log_message = "New picture received from '{entity}' ({attribute})\n"
