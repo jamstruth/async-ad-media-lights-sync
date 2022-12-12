@@ -107,7 +107,7 @@ class AsyncMediaLightsSync(Hass):
             return self.log(log_message.format(entity=entity, attribute=attribute + "; skipped"))
             self.log(log_message.format(entity=entity, attribute=attribute))
         try:
-            url = self.format_url(picture_url, entity, attribute)
+            url = self.format_url(picture_url)
             rgb_colors = self.get_colors(url)
         except (HTTPError, URLError) as error:
             self.error("Unable to fetch artwork for '{entity}.{attribute}': {error}\nURL: {url}\n".format(url=url, error=error))
