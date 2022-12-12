@@ -67,7 +67,7 @@ def media_player(media_lights_sync, given_that):
                 current_attribute = next(attr for attr in PICTURE_ATTRIBUTES if attributes.get(attr, None) is not None)
                 old_url = None
                 new_url = attributes[current_attribute]
-            media_lights_sync.change_lights_color(self.entity, current_attribute, old_url, new_url, None)
+            media_lights_sync.handle_media_state_change(self.entity, current_attribute, old_url, new_url, None)
 
     return UpdateState
 
@@ -79,7 +79,7 @@ class TestCallbacks:
         for photo_attribute in PICTURE_ATTRIBUTES:
             assert_that(media_lights_sync).\
                 listens_to.state('media_player.tv_test', attribute=photo_attribute).\
-                with_callback(media_lights_sync.change_lights_color)
+                with_callback(media_lights_sync.handle_media_state_change)
 
     def test_callbacks_are_set_for_multiple_entities(self, given_that, media_lights_sync, assert_that, update_passed_args):
         media_players = ['media_player.tv_test1', 'media_player.tv_test2']
@@ -90,7 +90,7 @@ class TestCallbacks:
             for photo_attribute in PICTURE_ATTRIBUTES:
                 assert_that(media_lights_sync).\
                     listens_to.state(media_player, attribute=photo_attribute).\
-                    with_callback(media_lights_sync.change_lights_color)
+                    with_callback(media_lights_sync.handle_media_state_change)
 
 
 class TestExtractImageColors:

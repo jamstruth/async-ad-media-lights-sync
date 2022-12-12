@@ -58,7 +58,7 @@ class AsyncMediaLightsSync(Hass):
     def condition_changed(self, entity, attribute, old, new, kwargs):
         self.log("Condition updated from {old} to {new}".format(old=old, new=new))
         self.log("Looking for {condition}".format(condition=self.condition["state"]))
-        # Check if we have changed from our old condition
+        # Check if our condition is no longer true
         if self.condition["state"] == old:
             # Cancel all of our media player tracking
             for listen in self.media_player_listens:
@@ -76,37 +76,47 @@ class AsyncMediaLightsSync(Hass):
         for media_player in media_players:
             self.log("Listening for picture changes on '{entity}'".format(entity=media_player))
             for photo_attribute in PICTURE_ATTRIBUTES:
-                media_player_listens.append(self.listen_state(self.change_lights_color, media_player,
+                media_player_listens.append(self.listen_state(self.handle_media_state_change, media_player,
                                                               attribute=photo_attribute))
         return media_player_listens
 
-    def change_lights_color(self, entity, attribute, old_url, new_url, kwargs):
+    def handle_media_state_change(self, entity, attribute, old_url, new_url, kwargs):
         """Callback when a entity_picture has changed."""
         if new_url == old_url:
             return
-
         if new_url is not None:
-            log_message = "New picture received from '{entity}' ({attribute})\n"
-            current_pictures = [self.get_state(entity, attribute=attribute) for attribute in PICTURE_ATTRIBUTES]
-
-            if self.media_player_callbacks.get(entity, None) == current_pictures:
-                # Image already processed from another callback
-                return self.log(log_message.format(entity=entity, attribute=attribute + "; skipped"))
-            self.log(log_message.format(entity=entity, attribute=attribute))
-
-            try:
-                url = self.format_url(new_url, entity, attribute)
-                rgb_colors = self.get_colors(url)
-            except (HTTPError, URLError) as error:
-                self.error("Unable to fetch artwork: {error}\nURL: {url}\n".format(url=url, error=error))
-                return
-
-            self.media_player_callbacks[entity] = current_pictures
-            for i in range(len(self.lights)):
-                color = self.get_saturated_color(rgb_colors[i]) if self.use_saturated_colors else rgb_colors[i]
-                self.set_light("on", self.lights[i], color=color, brightness=self.brightness, transition=self.transition)
+            self.change_light_colour(new_url, entity, attribute)
         else:
             self.reset_lights()
+
+    def perform_initial_light_change(self, media_players):
+        # Loop around until we get one that has a picture attribute
+        for media_player in media_players:
+            for photo_attribute in PICTURE_ATTRIBUTES:
+                picture_value = self.get_state(media_player, attribute=photo_attribute)
+                if picture_value is not None or picture_value is not "":
+                    # Set the light
+                    self.change_light_colour(self, picture_value, media_player, photo_attribute)
+
+    def change_light_colour(self, picture_url, entity, attribute):
+        log_message = "New picture received from '{entity}' ({attribute})\n"
+        current_pictures = [self.get_state(entity, attribute=attribute) for attribute in PICTURE_ATTRIBUTES]
+
+        if self.media_player_callbacks.get(entity, None) == current_pictures:
+            # Image already processed from another callback
+            return self.log(log_message.format(entity=entity, attribute=attribute + "; skipped"))
+            self.log(log_message.format(entity=entity, attribute=attribute))
+        try:
+            url = self.format_url(picture_url, entity, attribute)
+            rgb_colors = self.get_colors(url)
+        except (HTTPError, URLError) as error:
+            self.error("Unable to fetch artwork for '{entity}.{attribute}': {error}\nURL: {url}\n".format(url=url, error=error))
+            return
+
+        self.media_player_callbacks[entity] = current_pictures
+        for i in range(len(self.lights)):
+            color = self.get_saturated_color(rgb_colors[i]) if self.use_saturated_colors else rgb_colors[i]
+            self.set_light("on", self.lights[i], color=color, brightness=self.brightness, transition=self.transition)
 
     def store_initial_lights_states(self):
         """Save the initial state of all lights if not already done."""
@@ -187,13 +197,12 @@ class AsyncMediaLightsSync(Hass):
         """Extract an amount of colors corresponding to the amount of lights in the configuration."""
         return [palette[i:i + 3] for i in range(0, colors * 3, 3)]
 
-    def format_url(self, url, entity, attribute):
+    def format_url(self, url):
         """Append ha_url if this is a relative url"""
         is_absolute = bool(urlparse(url).netloc) or url.startswith("file:///")
         if is_absolute:
             return url
         elif not is_absolute and self.ha_url is None:
-            raise ValueError("A relative URL was received on '{entity}.{attribute}'.\nha_url must be specified in the configuration for relative URLs.".format(
-                entity=entity, attribute=attribute))
+            raise ValueError("A relative URL was received.\nha_url must be specified in the configuration for relative URLs.")
         else:
             return urljoin(self.ha_url, url)
