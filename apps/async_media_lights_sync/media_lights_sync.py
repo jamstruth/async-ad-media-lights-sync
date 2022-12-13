@@ -58,17 +58,20 @@ class AsyncMediaLightsSync(Hass):
     def condition_changed(self, entity, attribute, old, new, kwargs):
         self.log("Condition updated from {old} to {new}".format(old=old, new=new))
         self.log("Looking for {condition}".format(condition=self.condition["state"]))
-        # Check if our condition is no longer true
-        if self.condition["state"] == old:
-            # Cancel all of our media player tracking
-            for listen in self.media_player_listens:
-                self.cancel_listen_state(listen)
-            # Reset our light
-            self.reset_lights()
-        # Check if our condition is in place
-        if self.condition["state"] == new:
-            # Track the Media Players
-            self.media_player_listens = self.track_media_players(self.media_players)
+        # Check if our condition has changed at all
+        if old != new:
+            # Check if we have changed from valid
+            if self.condition["state"] == old:
+                # Cancel all of our media player tracking
+                for listen in self.media_player_listens:
+                    self.cancel_listen_state(listen)
+                # Reset our light
+                self.reset_lights()
+                return
+            # Check if we have changed to valid
+            if self.condition["state"] == new:
+                # Track the Media Players
+                self.media_player_listens = self.track_media_players(self.media_players)
 
     def track_media_players(self, media_players):
         self.store_initial_lights_states()
@@ -95,7 +98,7 @@ class AsyncMediaLightsSync(Hass):
         for media_player in media_players:
             for photo_attribute in PICTURE_ATTRIBUTES:
                 picture_value = self.get_state(media_player, attribute=photo_attribute)
-                if picture_value is not None or picture_value is not "":
+                if picture_value is not None and picture_value is not "":
                     # Set the light
                     self.change_light_colour(picture_value, media_player, photo_attribute)
                     break
